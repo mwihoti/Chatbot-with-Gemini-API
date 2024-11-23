@@ -18,7 +18,30 @@ export default function Home() {
   const quickResponse = (text) => {
     sendMessage(text);
     setShowQuickResponses(false);
-  }
+  };
+  const sendMessage = async (message) => {
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) return;
+
+    setShowQuickResponses(false);
+
+    const newMessage = { id: Date.now(), text: trimmedMessage, sender: 'user'};
+    setMessages(messages => [...messages, newMessage]);
+    setInput('');
+
+
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message: trimmedMessage})
+    });
+    const { reply } = await response.json();
+    const formattedReply = formatText(reply);
+
+    setMessages(messages => [...messages, { id: Date.now() + 1, text: formattedReply, sender: 'bot' }]);
+  };
   return (
     
       <div className={styles.container}>
