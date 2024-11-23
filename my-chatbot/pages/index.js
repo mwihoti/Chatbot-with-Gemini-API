@@ -42,6 +42,22 @@ export default function Home() {
 
     setMessages(messages => [...messages, { id: Date.now() + 1, text: formattedReply, sender: 'bot' }]);
   };
+  const formatText = (text) => {
+    let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    formattedText = formattedText.split('\n').map(line => {
+      if (line.trim().startsWith('* ')) {
+        return `<li>${line.trim().substring(2)}</li>`;
+      }
+      return line;
+    }).join('\n');
+
+    if (formattedText.includes('<li>')) {
+      formattedText = `<ul>${formattedText}</ul>`;
+    }
+    return formattedText
+  };
+  
+
   return (
     
       <div className={styles.container}>
