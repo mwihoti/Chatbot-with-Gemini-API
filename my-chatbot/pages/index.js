@@ -56,7 +56,18 @@ export default function Home() {
     }
     return formattedText
   };
+
+  const renderMessage = (msg) => {
+    if (msg.sender === 'bot') {
+      return <p key={msg.id} className={styles.botMessage} dangerouslySetInnerHTML={{ _html: msg.text }}></p>;
+
+    } else {
+      return <p key={msg.id} className={styles.userMessage}>{msg.text}</p>;
+    }
+  };
+
   
+
 
   return (
     
