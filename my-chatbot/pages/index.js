@@ -59,14 +59,14 @@ export default function Home() {
 
   const renderMessage = (msg) => {
     if (msg.sender === 'bot') {
-      return <p key={msg.id} className={styles.botMessage} dangerouslySetInnerHTML={{ _html: msg.text }}></p>;
+      return <p key={msg.id} className={styles.botMessage} dangerouslySetInnerHTML={{ __html: msg.text }}></p>;
 
     } else {
       return <p key={msg.id} className={styles.userMessage}>{msg.text}</p>;
     }
   };
 
-  
+
 
 
   return (
@@ -76,9 +76,9 @@ export default function Home() {
           {messages.map(msg => renderMessage(msg))}
           {showQuickResponses && (
             <div className={styles.quickResponses}>
-              <button onClick={() => quickResponses('Hello')} >Hello</button>
-              <button onClick={() => quickResponses('Give a quick tip for a developer')}>Quick Tip</button>
-              <button onClick={() => quickResponses('Tell me a joke!')}>Tell a Joke</button>
+              <button onClick={() => quickResponse('Hello')} >Hello</button>
+              <button onClick={() => quickResponse('Give a quick tip for a developer')}>Quick Tip</button>
+              <button onClick={() => quickResponse('Tell me a joke!')}>Tell a Joke</button>
             </div>
           )}
 
