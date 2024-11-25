@@ -38,7 +38,7 @@ export default function Home() {
       body: JSON.stringify({ message: trimmedMessage})
     });
     const { reply } = await response.json();
-    const formattedReply = formatText(reply);
+    const formattedReply = formatText(reply) || '';
 
     setMessages(messages => [...messages, { id: Date.now() + 1, text: formattedReply, sender: 'bot' }]);
   };
