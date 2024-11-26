@@ -6,9 +6,35 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [showQuickResponses, setShowQuickResponses] = useState(true);
+
   const handleInputChange = (e) => {
     setInput(e.target.value);
   }
+
+  const handleFileupload = async (e) => {
+    const file = e.target.file[0];
+    if (!file) return;
+
+
+    const formData = FormData();
+    formData.append('file', file);
+
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const { reply, fileUrl } = await response.json();
+    setMessages(messages => [...messages,
+      { id: Date.now(), text: file.name, sender: 'user', type: 'file', fileUrl}
+    ]);
+    
+    if (reply) {
+      setMessages(messages => [...messages, { id: Date.now() + 1, text: reply, sender: 'bot' }]);
+    }
+    
+  };
+  
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       sendMessage(input);
@@ -37,27 +63,26 @@ export default function Home() {
       },
       body: JSON.stringify({ message: trimmedMessage})
     });
-    const { reply } = await response.json();
-    const formattedReply = formatText(reply) || '';
 
-    setMessages(messages => [...messages, { id: Date.now() + 1, text: formattedReply, sender: 'bot' }]);
+    const {reply } = await response.json();
+    setMessages(messages => [ ...messages,
+      { id: Date.now + 1, text: reply, sender: 'bot'}
+    ]);
   };
-  const formatText = (text) => {
-    let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    formattedText = formattedText.split('\n').map(line => {
-      if (line.trim().startsWith('* ')) {
-        return `<li>${line.trim().substring(2)}</li>`;
-      }
-      return line;
-    }).join('\n');
+    
 
-    if (formattedText.includes('<li>')) {
-      formattedText = `<ul>${formattedText}</ul>`;
-    }
-    return formattedText
-  };
 
   const renderMessage = (msg) => {
+    if (msg.type === 'file') {
+      return (
+        <p key={msg.id} className={styles.userMessage}>
+
+          <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
+            {msg.text}
+          </a>
+        </p>
+      );
+    }
     if (msg.sender === 'bot') {
       return <p key={msg.id} className={styles.botMessage} dangerouslySetInnerHTML={{ __html: msg.text }}></p>;
 
@@ -94,6 +119,7 @@ export default function Home() {
                     className={styles.input}
                 />
                 <button onClick={() => sendMessage(input)} className={styles.sendButton}>Send</button>
+                <input type="file" onchange={handleFileupload} className={styles.fileInput} />
           </div>
       </div>
 

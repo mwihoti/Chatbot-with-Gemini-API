@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
 
         try {
-            const model = genAI.getGenerativeModel({model:  "gemini-1.0-pro" });
+            const model = genAI.getGenerativeModel({model:  "gemini-1.5-flash-8b" });
             const result = await model.generateContent(userMessage);
             const response = await result.response;
             const text = await response.text();
