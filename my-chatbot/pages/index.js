@@ -6,6 +6,7 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [showQuickResponses, setShowQuickResponses] = useState(true);
+  const [previewImage, setPreviewImage] = useState(null);
 
   const handleInputChange = (e) => {
     setInput(e.target.value);
@@ -16,35 +17,53 @@ export default function Home() {
     if (!file) return;
 
 
-    const formData = FormData();
-    formData.append('file', file);
-
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      body: formData,
-    });
-
-    const { reply, fileUrl } = await response.json();
-    setMessages(messages => [...messages,
-      { id: Date.now(), text: file.name, sender: 'user', type: 'file', fileUrl}
-    ]);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewImage({
+        file: file,
+        preview: reader.result
+      });
+    };
+    reader.readAsDataURL(file);
     
-    if (reply) {
-      setMessages(messages => [...messages, { id: Date.now() + 1, text: reply, sender: 'bot' }]);
-    }
+   
     
   };
   
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      sendMessage(input);
-      e.preventDefault();
+ 
+  const sendImageMessage = async () => {
+    if (!previewImage) return;
+
+    const formData = new FormData();
+    formData.append('file', previewImage.file);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        body: formData
+      });
+
+      const { reply } = await response.json();
+
+      sendMessage(messages => [
+        ...messages,
+        {
+          id: Date.now(),
+          text: previewImage.file.name,
+          sender: 'user',
+          type: 'image',
+          imageUrl: previewImage.preview
+        },
+        { id: Date.now() + 1, text: reply, sender: 'bot' }
+      ]);
+
+      setPreviewImage(null);
+    } catch (error) {
+      console.error("Error uploading image:", error);
     }
-  };
-  const quickResponse = (text) => {
-    sendMessage(text);
-    setShowQuickResponses(false);
-  };
+  }
+
+
   const sendMessage = async (message) => {
     const trimmedMessage = message.trim();
     if (!trimmedMessage) return;
@@ -55,7 +74,7 @@ export default function Home() {
     setMessages(messages => [...messages, newMessage]);
     setInput('');
 
-
+    try {
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: {
@@ -68,19 +87,35 @@ export default function Home() {
     setMessages(messages => [ ...messages,
       { id: Date.now + 1, text: reply, sender: 'bot'}
     ]);
+  } catch (error) {
+    console.error("Error sending message:", error);
+  }
   };
     
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      sendMessage(input);
+      e.preventDefault();
+    }
+  };
+  const quickResponse = (text) => {
+    sendMessage(text);
+    setShowQuickResponses(false);
+  };
 
 
   const renderMessage = (msg) => {
-    if (msg.type === 'file') {
+    if (msg.type === 'image') {
       return (
-        <p key={msg.id} className={styles.userMessage}>
+        <div key={msg.id} className={styles.userMessage}>
 
-          <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
-            {msg.text}
-          </a>
-        </p>
+          <img 
+          src={msg.imageUrl}
+          alt={msg.text}
+          className={styles.uploadedImage}
+          style={{ maxWidth: '200px', maxHeight: '200px', objectFit: 'contain'          }}
+          />
+            </div>
       );
     }
     if (msg.sender === 'bot') {
@@ -105,6 +140,19 @@ export default function Home() {
               <button onClick={() => quickResponse('Give a quick tip for a developer')}>Quick Tip</button>
               <button onClick={() => quickResponse('Tell me a joke!')}>Tell a Joke</button>
             </div>
+          )}
+
+          {/*Image preview */}
+          {previewImage && (
+            <div className={styles.imagePreview}>
+              <img src={previewImage.preview}
+              alt="Preview"
+              style={{maxWidth: '200px', maxHeight: '200px', objectFit: 'contain'}}
+              />
+
+              <button onClick={sendImageMessage}>send Image</button>
+              <button onClick={() => setPreviewImage(null)}>Cancel</button>
+              </div>  
           )}
 
 
