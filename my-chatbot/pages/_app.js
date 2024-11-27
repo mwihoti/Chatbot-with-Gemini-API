@@ -1,9 +1,8 @@
-import "@/styles/globals.css";
-
-
+import './App.css';
+import '@/styles/globals.css';
 function MyApp({ Component, pageProps}) {
   return (
-    <div className="container">
+    <div className="w-[40vw] mx-auto p-5 shadow-md rounded-md">
       <header>
         <h1>My ChatBot</h1>
 

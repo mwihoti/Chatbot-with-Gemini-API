@@ -3,6 +3,7 @@ import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
 
+
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 const model = genAI.getGenerativeModel({  model: "gemini-1.5-flash"});
 
@@ -11,6 +12,11 @@ export const config = {
         bodyParser: false,
     },
 };
+
+const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true});
+}
 
 export default async function handler(req, res) {
     if (req.method === 'POST') {
@@ -45,11 +51,11 @@ export default async function handler(req, res) {
                     try {
                         const filePath = uploadedFile.filepath;
                         const fileBuffer = fs.readFileSync(filePath);
-                        const ase64Image = fileBuffer.toString('base64');
+                        const base64Image = fileBuffer.toString('base64');
 
                         // preparen image part
                         const imagePart = {
-                            inlineDatal: {
+                            inlineData: {
                                 mimeType: uploadedFile.mimetype,
                                 data: base64Image
                             }
