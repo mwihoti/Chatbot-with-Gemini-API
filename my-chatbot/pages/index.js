@@ -1,6 +1,4 @@
 import React, { useState } from "react";
-import styles from "@/styles/Home.module.css";
-
 
 export default function Home() {
   const [messages, setMessages] = useState([]);
@@ -13,7 +11,7 @@ export default function Home() {
   }
 
   const handleFileupload = async (e) => {
-    const file = e.target.file[0];
+    const file = e.target.files[0];
     if (!file) return;
 
 
@@ -105,71 +103,111 @@ export default function Home() {
 
 
   const renderMessage = (msg) => {
-    if (msg.type === 'image') {
+    if (msg.type === "image") {
       return (
-        <div key={msg.id} className={styles.userMessage}>
-
-          <img 
-          src={msg.imageUrl}
-          alt={msg.text}
-          className={styles.uploadedImage}
-          style={{ maxWidth: '200px', maxHeight: '200px', objectFit: 'contain'          }}
+        <div key={msg.id} className="flex justify-end">
+          <img
+            src={msg.imageUrl}
+            alt={msg.text}
+            className="max-w-[200px] max-h-[200px] object-contain border rounded"
           />
-            </div>
+        </div>
       );
     }
-    if (msg.sender === 'bot') {
-      return <p key={msg.id} className={styles.botMessage} dangerouslySetInnerHTML={{ __html: msg.text }}></p>;
-
+    if (msg.sender === "bot") {
+      return (
+        <p
+          key={msg.id}
+          className="bg-gray-200 text-gray-800 rounded-lg p-2 max-w-sm self-start"
+          dangerouslySetInnerHTML={{ __html: msg.text }}
+        ></p>
+      );
     } else {
-      return <p key={msg.id} className={styles.userMessage}>{msg.text}</p>;
+      return (
+        <p
+          key={msg.id}
+          className="bg-blue-500 text-white rounded-lg p-2 max-w-sm self-end"
+        >
+          {msg.text}
+        </p>
+      );
     }
   };
 
-
-
-
   return (
-    
-      <div className={styles.container}>
-        <div className={styles.chatArea}>
-          {messages.map(msg => renderMessage(msg))}
-          {showQuickResponses && (
-            <div className={styles.quickResponses}>
-              <button onClick={() => quickResponse('Hello')} >Hello</button>
-              <button onClick={() => quickResponse('Give a quick tip for a developer')}>Quick Tip</button>
-              <button onClick={() => quickResponse('Tell me a joke!')}>Tell a Joke</button>
-            </div>
-          )}
-
-          {/*Image preview */}
-          {previewImage && (
-            <div className={styles.imagePreview}>
-              <img src={previewImage.preview}
-              alt="Preview"
-              style={{maxWidth: '200px', maxHeight: '200px', objectFit: 'contain'}}
-              />
-
-              <button onClick={sendImageMessage}>send Image</button>
-              <button onClick={() => setPreviewImage(null)}>Cancel</button>
-              </div>  
-          )}
-
-
-        </div>
-
-          <div className={styles.controls}>
-          <input
-                    type="text"
-                    value={input}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    className={styles.input}
-                />
-                <button onClick={() => sendMessage(input)} className={styles.sendButton}>Send</button>
-                <input type="file" onchange={handleFileupload} className={styles.fileInput} />
+    <div className="flex flex-col h-screen bg-gray-100 p-4">
+      <div className="flex-grow flex flex-col space-y-2 overflow-y-auto">
+        {messages.map((msg) => renderMessage(msg))}
+        {showQuickResponses && (
+          <div className="flex space-x-2">
+            <button
+              onClick={() => quickResponse("Hello")}
+              className="bg-blue-500 text-white py-1 px-3 rounded"
+            >
+              Hello
+            </button>
+            <button
+              onClick={() => quickResponse("Give a quick tip for a developer")}
+              className="bg-green-500 text-white py-1 px-3 rounded"
+            >
+              Quick Tip
+            </button>
+            <button
+              onClick={() => quickResponse("Tell me a joke!")}
+              className="bg-yellow-500 text-white py-1 px-3 rounded"
+            >
+              Tell a Joke
+            </button>
           </div>
+        )}
+
+        {/* Image Preview */}
+        {previewImage && (
+          <div className="flex flex-col items-center space-y-2">
+            <img
+              src={previewImage.preview}
+              alt="Preview"
+              className="max-w-[200px] max-h-[200px] object-contain border rounded"
+            />
+            <div className="flex space-x-2">
+              <button
+                onClick={sendImageMessage}
+                className="bg-blue-500 text-white py-1 px-3 rounded"
+              >
+                Send Image
+              </button>
+              <button
+                onClick={() => setPreviewImage(null)}
+                className="bg-red-500 text-white py-1 px-3 rounded"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
+      <div className="flex space-x-2 items-center mt-4">
+        <input
+          type="text"
+          value={input}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          className="flex-grow border rounded-lg p-2"
+          placeholder="Type a message..."
+        />
+        <button
+          onClick={() => sendMessage(input)}
+          className="bg-blue-500 text-white py-2 px-4 rounded"
+        >
+          Send
+        </button>
+        <input
+          type="file"
+          onChange={handleFileupload}
+          className="file:rounded-lg file:border file:px-4 file:py-2"
+        />
+      </div>
+    </div>
   );
 }

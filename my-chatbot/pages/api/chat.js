@@ -17,7 +17,8 @@ export default async function handler(req, res) {
         try {
             const form = formidable({
                 uploadDir: "./public/uploads",
-                keepExtensions: true
+                keepExtensions: true,
+                maxFileSize: 5 * 1024 * 1024
             });
 
             form.parse(req, async (err, fields, files) => {
@@ -43,27 +44,41 @@ export default async function handler(req, res) {
                     
                     try {
                         const filePath = uploadedFile.filepath;
-                        const fileContent = fs.readFileSync(filePath, "utf-8");
+                        const fileBuffer = fs.readFileSync(filePath);
+                        const ase64Image = fileBuffer.toString('base64');
+
+                        // preparen image part
+                        const imagePart = {
+                            inlineDatal: {
+                                mimeType: uploadedFile.mimetype,
+                                data: base64Image
+                            }
+                        }
 
                         const response = await model.generateContent(
-                            `Interpret the following file content and provide insights:\n\n${fileContent}`
+                            ["Describe this image in detail. What do you see?", imagePart]
                         );
 
                         reply = response.response.text() || "Failed to interpret the file content.";
                     } catch (readError) {
-                        console.error("Error reading file:", readError);
-                        reply = "Could not read file content.";
+                        console.error("Error while reading Image", readError);
+                        reply = "Could not read image content.";
                     }
                 }
 
                 if (message) {
-                    const response = await genAI.generateContent(
-                        {
-                            prompt: `Tell me about this message: ${message}`
-                        }
+                    try {
+                    const response = await model.generateContent(
+                        
+                        `Respond to this message: "${message}"`
+                        
                     );
 
                     reply += `\n\n${response.response.text() || "No response from the model."}`;
+                } catch (generateError) {
+                    console.error("Error while genarating content", generateError);
+                    reply += "\nFailed to generate a response.";
+                }
                 }
 
                 return res.status(200).json({ reply });
