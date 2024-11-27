@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 .chatArea {
   border: 1px solid #ccc;
   border-radius: 5px;
@@ -56,4 +60,26 @@
   padding: 5px;
   border-radius: 5px;
   background-color: #d1d1d1;
+}
+
+.uploadImage {
+  max-width: 200px;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+.imagePreview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #131111;
+  border-radius: 8px;
+}
+
+.fileInput {
+  margin: 10px 0;
 }

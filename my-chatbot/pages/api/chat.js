@@ -2,10 +2,14 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
+import { SpeechClient } from "@google-cloud/speech";
+
 
 
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 const model = genAI.getGenerativeModel({  model: "gemini-1.5-flash"});
+
+const speechClient = new SpeechClient();
 
 export const config = {
     api: {
@@ -52,6 +56,8 @@ export default async function handler(req, res) {
                         const filePath = uploadedFile.filepath;
                         const fileBuffer = fs.readFileSync(filePath);
                         const base64Image = fileBuffer.toString('base64');
+                        const audioBytes = fs.readFileSync(filePath).toString('base64');
+                        
 
                         // preparen image part
                         const imagePart = {

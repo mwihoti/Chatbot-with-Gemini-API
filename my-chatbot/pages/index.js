@@ -1,11 +1,37 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import Prism from "prismjs";
+import "prismjs/themes/prism-tomorrow.css"; // Example theme
+
 
 export default function Home() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [showQuickResponses, setShowQuickResponses] = useState(true);
   const [previewImage, setPreviewImage] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
+
+  useEffect (() => {
+    // Attach copyToClipboard to the window object
+window.copyToClipboard = function (id) {
+  const element = document.getElementById(id);
+  if (element) {
+    const text = element.innerText; // Get the content of the code block
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        alert("Copied to clipboard!"); // Optional success feedback
+      })
+      .catch((err) => {
+        alert("Failed to copy: " + err); // Optional error feedback
+      });
+  }
+};  
+  })
   const handleInputChange = (e) => {
     setInput(e.target.value);
   }
@@ -26,37 +52,6 @@ export default function Home() {
   };
   
  
-  const sendImageMessage = async () => {
-    if (!previewImage) return;
-
-    const formData = new FormData();
-    formData.append('file', previewImage.file);
-
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        body: formData
-      });
-
-      const { reply } = await response.json();
-
-      setMessages(messages => [
-        ...messages,
-        {
-          id: Date.now(),
-          text: previewImage.file.name,
-          sender: 'user',
-          type: 'image',
-          imageUrl: previewImage.preview
-        },
-        { id: Date.now() + 1, text: reply, sender: 'bot' }
-      ]);
-
-      setPreviewImage(null);
-    } catch (error) {
-      console.error("Error uploading image:", error);
-    }
-  }
 
 
   const sendMessage = async (message) => {
@@ -118,11 +113,7 @@ export default function Home() {
       return (
         <div key={msg.id} className="flex justify-end space-y-2">
         <div className="flex flex-col">  
-          {msg.text && (
-            <p className="bg-blue-500 text-white rounded-lg p-2 max-w-sm self-end">
-              {msg.text}
-            </p>
-          )}
+          
           <img
             src={msg.imageUrl}
             alt={msg.text}
@@ -135,11 +126,24 @@ export default function Home() {
     }
     if (msg.sender === "bot") {
       return (
-        <p
-          key={msg.id}
-          className="bg-gray-200 text-gray-800 rounded-lg p-2 max-w-sm self-start"
-          dangerouslySetInnerHTML={{ __html: msg.text }}
-        ></p>
+        <div key={msg.id} className="bg-gray-200 text-gray-800 rounded-lg p-4 max-w-md self-start">
+        {msg.text.startsWith("```") ? (
+          <pre>
+            <code
+              className="language-javascript"
+              dangerouslySetInnerHTML={{
+                __html: Prism.highlight(
+                  msg.text.replace(/```/g, ""),
+                  Prism.languages.javascript,
+                  "javascript"
+                ),
+              }}
+            ></code>
+          </pre>
+        ) : (
+          <p dangerouslySetInnerHTML={{ __html: formatBotResponse(msg.text) }}></p>
+        )}
+      </div>
       );
     } else {
       return (
@@ -152,6 +156,85 @@ export default function Home() {
       );
     }
   };
+
+  
+  const formatBotResponse = (text) => {
+    const parts = text.split(/```/);
+
+    // process each part based on wether its a  code block or normal text
+    return parts
+      .map((part, index) => {
+        if (index % 2 === 1) {
+          // Code block
+          const uniqueId = `code-block-${index}`;
+          return `
+          <div style="position: relative">
+         <pre id="${uniqueId}" style="background-color: black; color: limegreen; padding: 10px; border-radius: 5px; white-space: pre-wrap; overflow-x: auto;">${part}</pre>
+         <button onclick="copyToClipboard('${uniqueId}')" style="position: absolute; top: 5px; right: 5px; background-color: limegreen; color: black; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px;">Copy</button>        
+         
+           </div>
+           `;
+       
+      
+    } else {
+            // Basic Markdown parsing (you can use a library like `marked` for more complex cases)
+    return part
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Bold
+    .replace(/\*(.*?)\*/g, "<em>$1</em>") // Italics
+    .replace(/`([^`]+)`/g, "<code>$1</code>") // Inline code
+    .replace(/<input(.*?)>/g, '<input$1 style="padding: 5px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; width: 100%; margin-top: 5px;" />') // Input field styling
+
+    .replace(/\n/g, "<br/>"); // Newlines
+        }
+      })
+      .join("");
+
+    
+  };
+  const handleStartRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);  
+      };
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/wav'});
+        setAudioBlob(blob);
+      };
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Error accessing the micrphone", err);
+    }
+  }  
+  const handleStopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+  const handleSendAudio = async () => {
+
+    if (!audioBlob) return;
+
+    const formData = new FormData();
+    formData.append("file", audioBlob, "audio.wav");
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+      const { text } = data;
+      setMessages([...messages, { text, sender: "bot"}]);
+      setAudioBlob(null)
+    } catch (error) {
+      console.error("Error sending audio message:", error);
+    }
+  }
 
   return (
     <div className="flex flex-col h-screen bg-gray-100 p-4">
@@ -183,12 +266,24 @@ export default function Home() {
        
       </div>
 
-      <div className="flex space-x-6 items-center mt-4">
+      <div className="flex space-x-6 p-10 justify-content-center items-center mt-4">
+      <div>
+        <button onClick={isRecording ? handleStopRecording : handleStartRecording} className={`p-6 rounded-full ${
+            isRecording ? "bg-red-500 text-black" : "bg-gray-200 text-gray-800"
+          }`}
+          title={isRecording ? "Stop Recording" : "Start Recording"}
+          >
+          <FontAwesomeIcon icon="fa-solid fa-microphone" />
+          </button>
+        {audioBlob && (
+          <button onClick={handleSendAudio}>Send Audio</button>
+        )}
+      </div>
         <input
           type="text"
           value={input}
           onChange={handleInputChange}
-          className="flex-grow border rounded-lg p-2"
+          className="flex-grow border rounded-lg  p-20 scroll-m-2"
           placeholder="Type a message..."
         />
         {previewImage && (
@@ -224,3 +319,4 @@ export default function Home() {
     </div>
   );
 }
+
